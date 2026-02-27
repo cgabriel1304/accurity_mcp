@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(python3 -:*)"
+      "Bash(python3 -:*)",
+      "Bash(.venv/Scripts/python -c \"import inspect; from mcp.server.fastmcp import FastMCP; print\\(inspect.signature\\(FastMCP.run\\)\\)\")",
+      "Bash(.venv/Scripts/python -c \"import inspect; from mcp.server.fastmcp import FastMCP; print\\(inspect.getsource\\(FastMCP.run\\)\\)\")",
+      "Bash(.venv/Scripts/python -c \"import inspect; from mcp.server.fastmcp import FastMCP; print\\(inspect.getsource\\(FastMCP.__init__\\)\\)\")",
+      "Bash(.venv/Scripts/python -c \":*)"
     ]
   }
 }

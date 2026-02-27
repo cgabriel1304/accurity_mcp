@@ -1,0 +1,2 @@
+[console_scripts]
+accurity-mcp = accurity_mcp.server:main
