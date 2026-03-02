@@ -1,10 +1,13 @@
 """Accurity HTTP client with Keycloak OAuth2 token management."""
 
 import asyncio
+import logging
 import os
 import time
 
 import httpx
+
+logger = logging.getLogger(__name__)
 
 
 class AccurityClient:
@@ -36,36 +39,55 @@ class AccurityClient:
 
     async def _fetch_token(self) -> None:
         """Authenticate with username/password and store the tokens."""
-        response = await self._http.post(
-            self.auth_url,
-            data={
-                "client_id": "accurity",
-                "username": self.username,
-                "password": self.password,
-                "grant_type": "password",
-            },
-        )
-        response.raise_for_status()
+        logger.debug("Fetching new access token from %s", self.auth_url)
+        try:
+            response = await self._http.post(
+                self.auth_url,
+                data={
+                    "client_id": "accurity",
+                    "username": self.username,
+                    "password": self.password,
+                    "grant_type": "password",
+                },
+            )
+            response.raise_for_status()
+        except httpx.HTTPStatusError as exc:
+            logger.error("Token fetch failed: HTTP %s — %s", exc.response.status_code, exc.response.text[:200])
+            raise
+        except Exception:
+            logger.exception("Token fetch failed (network error)")
+            raise
         self._store_token_response(response.json())
+        logger.debug("Access token acquired successfully")
 
     async def _refresh_access_token(self) -> None:
         """Obtain a new access token using the stored refresh token.
 
         Falls back to full re-authentication if the refresh token is rejected.
         """
-        response = await self._http.post(
-            self.auth_url,
-            data={
-                "client_id": "accurity",
-                "grant_type": "refresh_token",
-                "refresh_token": self._refresh_token,
-            },
-        )
+        logger.debug("Refreshing access token")
+        try:
+            response = await self._http.post(
+                self.auth_url,
+                data={
+                    "client_id": "accurity",
+                    "grant_type": "refresh_token",
+                    "refresh_token": self._refresh_token,
+                },
+            )
+        except Exception:
+            logger.exception("Token refresh failed (network error)")
+            raise
         if response.status_code == 400:
+            logger.warning("Refresh token rejected (400) — falling back to full re-auth")
             # Refresh token expired or invalid — start fresh
             await self._fetch_token()
             return
-        response.raise_for_status()
+        try:
+            response.raise_for_status()
+        except httpx.HTTPStatusError as exc:
+            logger.error("Token refresh failed: HTTP %s — %s", exc.response.status_code, exc.response.text[:200])
+            raise
         data = response.json()
         # Preserve existing refresh token if a new one is not issued
         if "refresh_token" not in data:
@@ -111,6 +133,7 @@ class AccurityClient:
 
         If *query* is empty, all objects are returned (up to *max_results*).
         """
+        logger.debug("search | resource=%s query=%r start_from=%d max_results=%d", resource_path, query, start_from, max_results)
         headers = await self._auth_headers()
         payload: dict = {
             "startFrom": start_from,
@@ -122,20 +145,35 @@ class AccurityClient:
                 {"type": "SIMPLE_QUERY", "property": "name", "value": query}
             ]
 
-        response = await self._http.post(
-            f"{self.base_url}/api/{resource_path}/search",
-            json=payload,
-            headers=headers,
-        )
-        response.raise_for_status()
+        try:
+            response = await self._http.post(
+                f"{self.base_url}/api/{resource_path}/search",
+                json=payload,
+                headers=headers,
+            )
+            response.raise_for_status()
+        except httpx.HTTPStatusError as exc:
+            logger.error("search failed: resource=%s HTTP %s — %s", resource_path, exc.response.status_code, exc.response.text[:200])
+            raise
+        except Exception:
+            logger.exception("search failed (network error): resource=%s", resource_path)
+            raise
         return response.json()
 
     async def get_by_id(self, resource_path: str, item_id: int) -> dict:
         """Retrieve a single resource object by its integer ID."""
+        logger.debug("get_by_id | resource=%s id=%d", resource_path, item_id)
         headers = await self._auth_headers()
-        response = await self._http.get(
-            f"{self.base_url}/api/{resource_path}/{item_id}",
-            headers=headers,
-        )
-        response.raise_for_status()
+        try:
+            response = await self._http.get(
+                f"{self.base_url}/api/{resource_path}/{item_id}",
+                headers=headers,
+            )
+            response.raise_for_status()
+        except httpx.HTTPStatusError as exc:
+            logger.error("get_by_id failed: resource=%s id=%d HTTP %s — %s", resource_path, item_id, exc.response.status_code, exc.response.text[:200])
+            raise
+        except Exception:
+            logger.exception("get_by_id failed (network error): resource=%s id=%d", resource_path, item_id)
+            raise
         return response.json()

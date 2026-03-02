@@ -7,15 +7,17 @@ A microservice application that lets users query Accurity data governance resour
 ## Architecture Overview
 
 ```
-[React Chat UI] ──HTTP──> [Flask Backend]
-                               │
-                    ┌──────────┴──────────┐
-                    │                     │
-            [llama.cpp server]   [LangChain + MCP Adapter]
-            (local LLM :8080)            │
-                                  [MCP Server :8001]
-                                         │
-                                  [Accurity REST API]
+[React Chat UI :3000] ──HTTP──> [Express Server :3000]
+                                        │ proxy /api
+                                [Flask Backend :5000]
+                                        │
+                             ┌──────────┴──────────┐
+                             │                     │
+                     [llama.cpp server]   [LangChain + MCP Adapter]
+                     (local LLM :8080)            │
+                                          [MCP Server :8001]
+                                                   │
+                                          [Accurity REST API]
 ```
 
 **Request flow:**
@@ -72,12 +74,13 @@ accurity_mcp/
 
 ## Services & Ports
 
-| Service       | Port | Notes                                      |
-|---------------|------|--------------------------------------------|
-| Flask backend | 5000 | Serves API + React production build        |
-| React dev     | 3000 | Dev only (`npm start`), proxies to Flask   |
-| MCP server    | 8001 | HTTP/SSE transport                         |
-| llama.cpp     | 8080 | Local model server                         |
+| Service          | Port | Notes                                           |
+|------------------|------|-------------------------------------------------|
+| Flask backend    | 5000 | API only (`/api/*`)                             |
+| Frontend Express | 3000 | Serves React SPA, proxies `/api` to Flask       |
+| React dev        | 3000 | Dev only (`npm run dev`), proxies to Flask 5000 |
+| MCP server       | 8001 | HTTP/SSE transport                              |
+| llama.cpp        | 8080 | Local model server                              |
 
 ---
 
@@ -117,7 +120,7 @@ POST /api/{resource}/search
 - **LLM:** llama.cpp local server (`http://localhost:8080`)
 - **Orchestration:** LangChain + `langchain-mcp-adapters`
 - **Chat history:** SQLite (persisted per session)
-- **Production:** Flask serves the compiled React build from `/static` or root
+- **Production:** API only — serves `/api/*` routes, no static files
 
 Key dependencies:
 ```
@@ -131,10 +134,11 @@ httpx
 
 ### Frontend (React)
 
-- **Framework:** React (create-react-app or Vite)
+- **Framework:** React + Vite
 - **Purpose:** Chat interface — user sends messages, displays streamed or full LLM responses
-- **Dev:** `npm start` on port `3000`, proxy to Flask `5000`
-- **Production:** `npm run build` outputs to `webapp/backend/app/static/` — served by Flask
+- **Dev:** `npm run dev` on port `3000`, proxies `/api` to Flask `5000`
+- **Production:** Express server (`server.js`) serves the Vite build from `dist/` and proxies `/api` to Flask
+- **Config:** `PORT` (default `3000`), `BACKEND_URL` (default `http://localhost:5000`)
 
 ---
 
@@ -188,13 +192,14 @@ services:
     ports: ["5000:5000"]
     depends_on: [mcp]
     env_file: .env
-    volumes:
-      - ./webapp/frontend/build:/app/static  # React build output
 
-  frontend-builder:
-    build: ./webapp/frontend
-    volumes:
-      - ./webapp/frontend/build:/build       # Outputs build for backend to serve
+  frontend:
+    build: ./webapp/frontend      # multi-stage: Vite build + Express serve
+    ports: ["3000:3000"]
+    environment:
+      PORT: "3000"
+      BACKEND_URL: http://backend:5000
+    depends_on: [backend]
 ```
 
 > llama.cpp runs natively on the host machine (GPU access). Point `LLAMA_BASE_URL` to `http://host.docker.internal:8080` when running Flask inside Docker.
@@ -214,8 +219,11 @@ cd webapp/backend && python -m venv .venv && source .venv/Scripts/activate
 pip install -r requirements.txt
 flask run --port 5000
 
-# React frontend
-cd webapp/frontend && npm install && npm start
+# React frontend (dev)
+cd webapp/frontend && npm install && npm run dev
+
+# React frontend (production preview)
+cd webapp/frontend && npm run build && npm run serve
 
 # llama.cpp (host)
 llama-server.exe -m "D:/AI/models/gemma-3-4b-it-Q4_K_M.gguf"

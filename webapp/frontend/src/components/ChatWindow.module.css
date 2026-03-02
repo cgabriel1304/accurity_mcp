@@ -1,0 +1,42 @@
+.window {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+.messages {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  max-width: 860px;
+  margin: 0 auto;
+}
+
+/* Empty state */
+.empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 12px;
+  color: #9aa3c0;
+}
+
+.emptyIcon {
+  font-size: 48px;
+}
+
+.emptyTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: #555e7a;
+}
+
+.emptyHint {
+  font-size: 14px;
+}

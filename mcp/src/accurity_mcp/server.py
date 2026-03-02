@@ -15,6 +15,7 @@ Example:
 
 from __future__ import annotations
 
+import logging
 import os
 import sys
 from contextlib import asynccontextmanager
@@ -27,6 +28,13 @@ from accurity_mcp.client import AccurityClient
 from accurity_mcp.tools import register_all_tools
 
 load_dotenv()
+
+logging.basicConfig(
+    level=os.getenv("LOG_LEVEL", "INFO").upper(),
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Validate required env vars early so failures are obvious
@@ -55,15 +63,24 @@ _client: AccurityClient | None = None
 @asynccontextmanager
 async def lifespan(server: FastMCP) -> AsyncIterator[None]:
     global _client
+    logger.info("MCP server starting — connecting to Accurity at %s", os.getenv("ACCURITY_BASE_URL"))
     _client = AccurityClient()
     try:
         yield
+    except Exception:
+        logger.exception("Unhandled error in MCP server lifespan")
+        raise
     finally:
+        logger.info("MCP server shutting down")
         if _client is not None:
             await _client.aclose()
 
 
-mcp = FastMCP("accurity-mcp", lifespan=lifespan)
+# Read host early so FastMCP initialises the DNS-rebinding policy correctly.
+# When MCP_HOST=0.0.0.0 (Docker/network), auto-protection is NOT triggered, so
+# other containers can connect freely.  When MCP_HOST=127.0.0.1 (local dev),
+# auto-protection IS enabled, restricting connections to localhost origins.
+mcp = FastMCP("accurity-mcp", lifespan=lifespan, host=os.getenv("MCP_HOST", "127.0.0.1"))
 
 
 def _register_tools() -> None:
@@ -108,7 +125,6 @@ def main() -> None:
             sys.exit(f"[accurity-mcp] MCP_PORT must be an integer, got: {port_str!r}")
 
         host = os.getenv("MCP_HOST", "127.0.0.1")
-        mcp.settings.host = host
         mcp.settings.port = port
         print(f"[accurity-mcp] Starting HTTP/SSE server on {host}:{port}", flush=True)
         mcp.run(transport="sse")

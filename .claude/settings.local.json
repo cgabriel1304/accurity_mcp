@@ -5,7 +5,15 @@
       "Bash(.venv/Scripts/python -c \"import inspect; from mcp.server.fastmcp import FastMCP; print\\(inspect.signature\\(FastMCP.run\\)\\)\")",
       "Bash(.venv/Scripts/python -c \"import inspect; from mcp.server.fastmcp import FastMCP; print\\(inspect.getsource\\(FastMCP.run\\)\\)\")",
       "Bash(.venv/Scripts/python -c \"import inspect; from mcp.server.fastmcp import FastMCP; print\\(inspect.getsource\\(FastMCP.__init__\\)\\)\")",
-      "Bash(.venv/Scripts/python -c \":*)"
+      "Bash(.venv/Scripts/python -c \":*)",
+      "Bash(.venv/Scripts/python -c \"import langgraph; print\\(langgraph.__version__\\)\")",
+      "Bash(.venv/Scripts/python -c \"from langgraph.prebuilt import create_react_agent; print\\(''ok''\\)\")",
+      "Bash(.venv/Scripts/python -c \"from langgraph.prebuilt import create_react_agent; print\\(''create_react_agent ok''\\)\")",
+      "Bash(.venv/Scripts/python -c \"from app.agent import stream_agent; print\\(''import ok''\\)\")",
+      "Bash(docker compose build)",
+      "Bash(.venv/Scripts/python --version)",
+      "Bash(pip show langchain-core langchain pydantic)",
+      "Bash(.venv/Scripts/pip show langchain-core langchain langchain-openai langchain-mcp-adapters)"
     ]
   }
 }

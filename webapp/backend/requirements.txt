@@ -1,0 +1,9 @@
+flask>=3.0
+flask-cors>=4.0
+flask-sqlalchemy>=3.1
+langchain>=0.3
+langchain-openai>=0.2
+langchain-mcp-adapters>=0.1
+langgraph>=0.2
+gunicorn>=22.0
+python-dotenv>=1.0

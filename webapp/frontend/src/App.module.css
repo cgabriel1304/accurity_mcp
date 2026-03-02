@@ -1,0 +1,65 @@
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: #f5f6fa;
+}
+
+/* Header */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  height: 56px;
+  background: #fff;
+  border-bottom: 1px solid #e2e5ee;
+  flex-shrink: 0;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo {
+  font-size: 22px;
+  color: #4a6cf7;
+}
+
+.title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a1a2e;
+  letter-spacing: -0.2px;
+}
+
+.newChatBtn {
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #4a6cf7;
+  background: #eef0fd;
+  border: 1px solid #c7cdee;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.newChatBtn:hover {
+  background: #dce0fb;
+}
+
+/* Main / Footer */
+.main {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.footer {
+  flex-shrink: 0;
+}

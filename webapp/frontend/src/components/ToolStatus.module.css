@@ -1,0 +1,32 @@
+.container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 4px 0 8px 42px; /* indent to align under assistant bubbles */
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: #eef0fd;
+  border: 1px solid #c7cdee;
+  border-radius: 20px;
+  font-size: 12px;
+  color: #4a6cf7;
+  font-weight: 500;
+}
+
+.spinner {
+  width: 10px;
+  height: 10px;
+  border: 2px solid #c7cdee;
+  border-top-color: #4a6cf7;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

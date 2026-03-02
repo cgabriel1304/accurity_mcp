@@ -1,0 +1,65 @@
+services:
+
+  # ── 1. MCP server ─────────────────────────────────────────────────────────
+  mcp:
+    build:
+      context: ./mcp
+    ports:
+      - "8001:8001"
+    env_file: .env
+    environment:
+      PYTHONUNBUFFERED: "1"
+      MCP_TRANSPORT: http
+      MCP_HOST: 0.0.0.0
+      MCP_PORT: "8001"
+    restart: unless-stopped
+    networks:
+      - accurity-net
+
+  # ── 2. Flask backend (API only) ───────────────────────────────────────────
+  backend:
+    build:
+      context: ./webapp/backend
+    ports:
+      - "5000:5000"
+    env_file: .env
+    environment:
+      PYTHONUNBUFFERED: "1"
+      # Reach MCP by service name over the shared bridge
+      MCP_SERVER_URL: http://mcp:8001
+      # llama.cpp runs on the host; host.docker.internal resolves to it
+      LLAMA_BASE_URL: http://host.docker.internal:8080
+    volumes:
+      # Persist SQLite chat history across restarts
+      - backend-data:/app
+    depends_on:
+      - mcp
+    restart: unless-stopped
+    networks:
+      - accurity-net
+
+  # ── 3. React frontend (Express) ───────────────────────────────────────────
+  frontend:
+    build:
+      context: ./webapp/frontend
+    ports:
+      - "3000:3000"
+    stdin_open: true
+    tty: true
+    env_file: .env
+    environment:
+      PORT: "3000"
+      BACKEND_URL: http://backend:5000
+      NODE_OPTIONS: "--unhandled-rejections=warn"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - accurity-net
+
+networks:
+  accurity-net:
+    driver: bridge
+
+volumes:
+  backend-data:

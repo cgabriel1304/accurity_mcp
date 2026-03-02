@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import json
+import logging
 from typing import TYPE_CHECKING
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from mcp.server.fastmcp import FastMCP
@@ -55,6 +58,7 @@ def _make_search_tool(api_path: str, human_name: str, client: AccurityClient):
             result = await client.search(api_path, query, start_from, max_results)
             return json.dumps(result)
         except Exception as exc:
+            logger.error("Tool search_%s error: %s", api_path, exc, exc_info=exc)
             return json.dumps({"error": str(exc)})
 
     _tool.__doc__ = (
@@ -76,6 +80,7 @@ def _make_get_tool(api_path: str, human_name: str, client: AccurityClient):
             result = await client.get_by_id(api_path, id)
             return json.dumps(result)
         except Exception as exc:
+            logger.error("Tool get_%s_by_id error: id=%d %s", api_path, id, exc, exc_info=exc)
             return json.dumps({"error": str(exc)})
 
     _tool.__doc__ = (
